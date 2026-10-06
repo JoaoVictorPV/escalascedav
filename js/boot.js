@@ -6,6 +6,34 @@
   var KEY_SLOT = 'escala-chave';
   var app = document.getElementById('app');
 
+  // Tema claro/escuro: segue o aparelho até a pessoa escolher; a escolha fica neste navegador.
+  (function () {
+    var KEY = 'escala-tema', root = document.documentElement;
+    var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    function saved() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+    function current() { return saved() || (mq && mq.matches ? 'dark' : 'light'); }
+    var SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>';
+    var MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
+    var box = document.createElement('div');
+    box.className = 'theme'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Tema');
+    box.innerHTML = '<button type="button" data-t="light" title="Tema claro" aria-label="Tema claro">' + SUN + '</button>' +
+      '<button type="button" data-t="dark" title="Tema escuro" aria-label="Tema escuro">' + MOON + '</button>';
+    function paint() {
+      var s = saved();
+      if (s) root.setAttribute('data-theme', s); else root.removeAttribute('data-theme');
+      var c = current();
+      Array.prototype.forEach.call(box.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', b.dataset.t === c); });
+    }
+    box.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      try { localStorage.setItem(KEY, b.dataset.t); } catch (err) {}
+      paint();
+    });
+    if (mq && mq.addEventListener) mq.addEventListener('change', paint);
+    document.body.appendChild(box);
+    paint();
+  })();
+
   function stored() {
     try { return JSON.parse(localStorage.getItem(KEY_SLOT) || sessionStorage.getItem(KEY_SLOT) || 'null'); } catch (e) { return null; }
   }
