@@ -565,6 +565,13 @@ function startApp(STATE, CTX) {
       });
     }, function () { throw { status: 0, message: 'sem conexão com o GitHub' }; });
   }
+  // Só libera os controles se o token puder gravar neste repositório.
+  function verifyToken(tok) {
+    return gh('', null, tok).then(function (j) {
+      var p = j && j.permissions;
+      if (!p || !(p.push || p.maintain || p.admin)) throw { status: 403, message: 'sem permissão de escrita' };
+    });
+  }
   function utf8b64(str) { return EscalaCrypto.b64(new TextEncoder().encode(str)); }
   // Vários arquivos num único commit (Git Data API).
   function commitFiles(files, message) {
@@ -619,7 +626,7 @@ function startApp(STATE, CTX) {
       var tok = inp.value.trim();
       if (!tok) { msg.textContent = 'Cole o token gerado no GitHub.'; return; }
       var ok = document.getElementById('t-ok'); ok.disabled = true; msg.textContent = 'Conferindo…';
-      gh('', null, tok).then(function () {
+      verifyToken(tok).then(function () {
         setToken(tok); canWrite = true; renderAll();
         if (then) then(); else toast('Token salvo. Os controles de atualização agora aparecem neste navegador.');
       }).catch(function (err) { ok.disabled = false; msg.textContent = ghErrorText(err); });
@@ -732,6 +739,12 @@ function startApp(STATE, CTX) {
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.querySelector('#layer .modal') && !document.querySelector('#m-pub[disabled]')) { pending = null; closeLayer(); } });
 
-  canWrite = !!ghToken();
+  canWrite = false;
   renderAll();
+  if (ghToken()) {
+    verifyToken(ghToken()).then(function () { canWrite = true; renderAll(); }, function (err) {
+      // Token revogado ou sem permissão: some deste navegador. Falha de rede: só mantém oculto.
+      if (err && (err.status === 401 || err.status === 403 || err.status === 404)) setToken('');
+    });
+  }
 }
