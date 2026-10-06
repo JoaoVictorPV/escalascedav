@@ -417,7 +417,7 @@ function startApp(STATE, CTX) {
   function renderAll() {
     app.innerHTML = renderHeader() + nextWeekend() + renderBar() + '<main id="main"></main>' +
       '<footer class="foot"><span>Espelho da planilha “Plantão final de semana MATRIZ · ECO · SEMINÁRIO”. Em caso de dúvida, vale a planilha original.</span>' +
-      '<span class="foot-act"><button class="linkbtn sm" id="f-tok">Acesso ao GitHub</button><button class="linkbtn sm" id="f-pw">Trocar senha</button><button class="linkbtn sm" id="f-lock">Bloquear neste aparelho</button></span></footer>' +
+      '<span class="foot-act"><button class="linkbtn sm" id="f-tok">Acesso ao GitHub</button>' + (canWrite ? '<button class="linkbtn sm" id="f-pw">Trocar senha</button>' : '') + '<button class="linkbtn sm" id="f-lock">Bloquear neste aparelho</button></span></footer>' +
       '<div id="layer"></div>';
     bind();
     renderMain();
@@ -437,7 +437,7 @@ function startApp(STATE, CTX) {
     var pick = document.getElementById('pick'), file = document.getElementById('file');
     pick.addEventListener('click', function () { file.click(); });
     document.getElementById('f-tok').onclick = function () { askToken(); };
-    document.getElementById('f-pw').onclick = changePassword;
+    var fpw = document.getElementById('f-pw'); if (fpw) fpw.onclick = changePassword;
     document.getElementById('f-lock').onclick = function () { CTX.lock(); };
     file.addEventListener('change', function () { if (file.files[0]) handleFile(file.files[0]); file.value = ''; });
   }
@@ -614,14 +614,14 @@ function startApp(STATE, CTX) {
     var inp = document.getElementById('tok'), msg = document.getElementById('t-msg');
     inp.focus();
     document.getElementById('t-cancel').onclick = function () { closeLayer(); if (then && pending) showPreview(); };
-    if (has) document.getElementById('t-del').onclick = function () { setToken(''); closeLayer(); toast('Token removido deste navegador.'); };
+    if (has) document.getElementById('t-del').onclick = function () { setToken(''); canWrite = false; renderAll(); toast('Token removido. Os controles de atualização foram ocultados neste navegador.'); };
     function save() {
       var tok = inp.value.trim();
       if (!tok) { msg.textContent = 'Cole o token gerado no GitHub.'; return; }
       var ok = document.getElementById('t-ok'); ok.disabled = true; msg.textContent = 'Conferindo…';
       gh('', null, tok).then(function () {
-        setToken(tok); closeLayer();
-        if (then) then(); else toast('Token salvo neste navegador.');
+        setToken(tok); canWrite = true; renderAll();
+        if (then) then(); else toast('Token salvo. Os controles de atualização agora aparecem neste navegador.');
       }).catch(function (err) { ok.disabled = false; msg.textContent = ghErrorText(err); });
     }
     document.getElementById('t-ok').onclick = save;
@@ -691,7 +691,7 @@ function startApp(STATE, CTX) {
     document.getElementById('p-cancel').onclick = closeLayer;
     document.getElementById('p-ok').onclick = function () {
       var a = document.getElementById('pw1').value, b = document.getElementById('pw2').value;
-      if (a.length < 10) { msg.textContent = 'Use pelo menos 10 caracteres.'; return; }
+      if (a.length < 6) { msg.textContent = 'Use pelo menos 6 caracteres.'; return; }
       if (a !== b) { msg.textContent = 'As duas senhas não são iguais.'; return; }
       var ok = this; ok.disabled = true; msg.innerHTML = '<span class="spinner"></span> Criptografando de novo…';
       var salt = EscalaCrypto.newSalt(), iter = EscalaCrypto.ITER, newKey;
@@ -732,6 +732,6 @@ function startApp(STATE, CTX) {
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.querySelector('#layer .modal') && !document.querySelector('#m-pub[disabled]')) { pending = null; closeLayer(); } });
 
-  canWrite = true;
+  canWrite = !!ghToken();
   renderAll();
 }

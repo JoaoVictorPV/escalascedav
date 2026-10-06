@@ -25,7 +25,9 @@ Na primeira publicação o site pede um **token do GitHub**, que fica guardado s
 
 ## Outras funções (rodapé do site)
 
-- **Acesso ao GitHub**: troca ou remove o token deste navegador.
+O botão **Atualizar planilha**, o arrastar-e-soltar e **Trocar senha** só aparecem no navegador que tem um token do GitHub salvo. Quem tem apenas a senha da escala só consegue ver.
+
+- **Acesso ao GitHub**: salva, troca ou remove o token deste navegador.
 - **Trocar senha**: criptografa tudo de novo com uma senha nova, inclusive os arquivos do histórico.
 - **Bloquear neste aparelho**: esquece a senha neste navegador.
 
